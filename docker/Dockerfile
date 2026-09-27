@@ -52,6 +52,13 @@ RUN addgroup -S -g 10001 site 2>/dev/null || true \
  && mkdir -p /srv /data /config /etc/caddy \
  && chown -R 10001:10001 /srv /data /config /etc/caddy
 
+# The upstream image grants the binary cap_net_bind_service=ep so a non-root Caddy can bind
+# :80. This container listens on :8080, so the capability is never needed, and leaving it on
+# makes the binary UNEXECUTABLE under the compose hardening: cap_drop ALL plus
+# no-new-privileges makes the exec fail with EPERM ("tini: exec caddy failed: Operation not
+# permitted"). Stripping it removes the escalation vector and lets the hardening hold.
+RUN setcap -r /usr/bin/caddy
+
 COPY --from=build --chown=10001:10001 /srv /srv
 COPY --chown=10001:10001 docker/Caddyfile /etc/caddy/Caddyfile
 
