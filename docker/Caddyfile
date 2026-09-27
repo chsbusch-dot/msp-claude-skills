@@ -1,0 +1,58 @@
+# Caddyfile for the msp-skills docs container.
+#
+# Container-internal only: this listens on :8080 and is reachable exclusively on the
+# Docker `edge` network. caddy-lan terminates TLS for msp-skills.lan.synviron.com and
+# puts Authelia in front of it; nothing here is exposed to the host or the LAN directly.
+#
+# The hard part of this file is the response headers, not the file serving. The content
+# is generated from markdown, and markdown can carry raw HTML. A strict CSP is what makes
+# that harmless: no inline scripts, no event handlers, no external origins, no framing.
+
+{
+	admin off
+	auto_https off
+	servers {
+		protocols h1 h2
+	}
+}
+
+:8080 {
+	root * /srv
+	encode zstd gzip
+
+	header {
+		Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		Cross-Origin-Opener-Policy "same-origin"
+		Cross-Origin-Resource-Policy "same-origin"
+		Permissions-Policy "geolocation=(), microphone=(), camera=(), interest-cohort=()"
+		-Server
+	}
+
+	# Readiness probe for the compose healthcheck. Plain, cheap, no filesystem touch.
+	handle /healthz {
+		respond "ok" 200
+	}
+
+	handle_errors {
+		@404 expression {err.status_code} == 404
+		handle @404 {
+			rewrite * /404.html
+			file_server
+		}
+		respond "{err.status_code} {err.status_text}" {err.status_code}
+	}
+
+	handle {
+		file_server {
+			hide .git .env
+		}
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

@@ -1,0 +1,3 @@
+# Build-time only. Pinned to the version this image was validated against, so the
+# generated HTML is reproducible.
+markdown==3.11
