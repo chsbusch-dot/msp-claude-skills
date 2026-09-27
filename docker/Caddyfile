@@ -54,5 +54,9 @@
 	log {
 		output stdout
 		format console
+		# Silence the healthcheck. The compose probe hits /healthz every 30s over loopback,
+		# which is 2,880 JSON lines a day of pure noise at ~1.5 KB each: it would rotate the
+		# 10m x 3 log files on its own and bury the requests worth reading.
+		skip_uris /healthz
 	}
 }
