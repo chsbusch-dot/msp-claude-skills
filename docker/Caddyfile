@@ -54,9 +54,11 @@
 	log {
 		output stdout
 		format console
-		# Silence the healthcheck. The compose probe hits /healthz every 30s over loopback,
-		# which is 2,880 JSON lines a day of pure noise at ~1.5 KB each: it would rotate the
-		# 10m x 3 log files on its own and bury the requests worth reading.
-		skip_uris /healthz
+		# NB: the compose healthcheck hits /healthz every 30s, so those lines dominate this log.
+		# There is no way to skip a URI here: caddy 2.11's `log` directive accepts `output`,
+		# `format` and `level`, and rejects skip_uris / skip_hosts / exclude (verified against
+		# the binary, not the docs). The only alternative is a second listener for the probe,
+		# which is more surface than the noise is worth. The 10m x 3 json-file rotation in
+		# compose.yaml bounds it instead.
 	}
 }
