@@ -29,6 +29,11 @@ docker build -f docker/Dockerfile -t msp-skills:local .
 On `.212` the compose file does this from the clone at `/opt/apphost/src/msp-skills`
 (see the git-everywhere deploy standard: the box holds a real clone it can `git pull`).
 
+Both bases are pinned by **digest**, not by tag, because that deploy rebuilds on every run: a
+floating tag would let an upstream push change the served pages, or the server, with no commit
+here. `caddy:2.11-alpine` is pinned to the manifest that reports `CADDY_VERSION=v2.11.4`, the
+version the live site was verified against. Do not relax this to a tag for convenience.
+
 ## What lands in the image
 
 ```

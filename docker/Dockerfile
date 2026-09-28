@@ -17,7 +17,10 @@
 # ---------------------------------------------------------------------------
 # Stage 1: render the markdown into static HTML
 # ---------------------------------------------------------------------------
-FROM python:3.12-alpine AS build
+# Bases are pinned by digest, not by tag. The compose stack on .212 rebuilds from the git
+# clone on every deploy (msp-skills-up.sh does `up -d --build`), so a floating tag would let
+# an upstream push change the served bytes with no commit here. Resolved 2026-09-27.
+FROM python:3.12-alpine@sha256:4c47124a8391cb7a9f571164147d154777cf012a4ece5f86097130d7a4478111 AS build
 
 WORKDIR /src
 
@@ -44,7 +47,9 @@ RUN python3 /src/docker/build_site.py --root /src --out /srv \
 # ---------------------------------------------------------------------------
 # Stage 2: serve it. Nothing from stage 1 survives except /srv.
 # ---------------------------------------------------------------------------
-FROM caddy:2.11-alpine
+# Pinned by digest (resolved 2026-09-27): this manifest is CADDY_VERSION=v2.11.4, the version
+# the live deployment was validated against. Same rule as the digest-pinned lan-portal images.
+FROM caddy:2.11-alpine@sha256:6aeddd44c3078b0f9a35206472a11420648a79c184603ef95957d0a20044cb2b
 
 # Caddy's own user, so the process never runs as root.
 RUN addgroup -S -g 10001 site 2>/dev/null || true \
